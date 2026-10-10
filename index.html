@@ -2,186 +2,142 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ретро Аркады</title>
+    <title>DBD Skill Check</title>
     <style>
-        * { box-sizing: border-box; user-select: none; }
-        body { margin: 0; padding: 0; background: #111; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; }
-        .screen { display: none; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100vh; position: absolute; top: 0; left: 0; }
-        .active-screen { display: flex; }
-        h1, h2 { color: #fc0; text-transform: uppercase; margin-bottom: 20px; text-shadow: 0 0 10px rgba(255,204,0,0.3); }
-        .btn { background: #222; color: #fff; border: 2px solid #555; padding: 12px 24px; margin: 8px; cursor: pointer; font-weight: bold; border-radius: 8px; font-size: 1.1rem; transition: all 0.2s; min-width: 200px; text-align: center; }
-        .btn:hover { background: #333; border-color: #fc0; box-shadow: 0 0 10px rgba(255,204,0,0.4); }
-        .btn-active { background: #fc0 !important; color: #111 !important; border-color: #fc0 !important; }
-        .stats-bar { font-size: 1.3rem; margin-bottom: 15px; display: flex; gap: 20px; font-weight: bold; }
-        .game-area { position: relative; width: 300px; height: 300px; background: #151515; border: 2px solid #333; border-radius: 10px; box-shadow: 0 0 15px rgba(0,0,0,0.5); }
+        body { background: #111; color: #fff; font-family: sans-serif; text-align: center; padding-top: 30px; user-select: none; }
+        .stats { font-size: 1.2rem; margin-bottom: 20px; }
+        .skill-box { position: relative; width: 300px; height: 300px; margin: 0 auto 20px; }
         canvas { position: absolute; top: 0; left: 0; }
-        .bottom-panel { background: #222; padding: 12px 20px; border-radius: 12px; border: 1px solid #333; margin-top: 15px; text-align: center; min-width: 300px; font-size: 0.9rem; }
-        #gameOverModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 200; }
+        .controls { background: #222; padding: 15px; border-radius: 10px; display: inline-block; margin-top: 20px; }
+        .btn { background: #333; color: #fff; border: 1px solid #555; padding: 6px 12px; margin: 5px; cursor: pointer; font-weight: bold; }
+        .btn.active { background: #fc0; color: #111; }
+        #menu { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; flex-direction: column; align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
-    <div id="gameOverModal">
-        <h2 id="goTitle">Игра Окончена</h2>
-        <p style="font-size:1.3rem;" id="goDetails"></p>
-        <button class="btn" id="restartBtn" onclick="restartCurrentGame()">Играть снова (ПРОБЕЛ)</button>
-        <button class="btn" onclick="toMenu()">В главное меню</button>
+
+    <div id="menu">
+        <h2>Игра Окончена</h2>
+        <p>Очки: <span id="fScore" style="color:#fc0">0</span> | Комбо: <span id="fCombo" style="color:#fc0">0x</span></p>
+        <button class="btn" id="restBtn">Играть заново (ПРОБЕЛ)</button>
     </div>
 
-    <div id="mainMenu" class="screen active-screen">
-        <h1>Ретро Аркады 🕹️</h1>
-        <button class="btn" onclick="switchGame('skill')">🎯 Проверка реакции</button>
-        <button class="btn" onclick="switchGame('snake')">🐍 Неоновая змейка</button>
-        <div style="margin-top: 30px; display: flex; align-items: center; gap: 10px;">🔊 <input type="range" id="vol" min="0" max="1" step="0.1" value="0.5"> Звук</div>
+    <div class="stats">
+        Очки: <span id="score" style="color:#f33; font-weight:bold;">0</span> | 
+        Комбо: <span id="combo" style="color:#fc0; font-weight:bold;">0x</span> | 
+        Жизни: <span id="lives" style="color:#f33;">❤️❤️❤️</span>
     </div>
 
-    <div id="skillScreen" class="screen">
-        <div class="stats-bar">
-            <div>Очки: <span id="skScore" style="color:#f33">0</span></div>
-            <div>Комбо: <span id="skCombo" style="color:#fc0">0x</span></div>
-            <div>Жизни: <span id="skLives" style="color:#ff3366">❤️❤️❤️</span></div>
-        </div>
-        <div class="game-area" style="background:transparent; border:none; box-shadow: none;">
-            <canvas id="skCanvas" width="300" height="300"></canvas>
-        </div>
-        <div style="margin-top:10px; color:#888;">Нажми <b>ПРОБЕЛ</b> для попадания!</div>
-        <div class="bottom-panel">
-            Режим: <button class="btn-active" id="skNorm" style="padding:4px 10px; font-size:0.8rem; min-width:auto; margin:2px;" onclick="setSkDiff('normal')">Обычный</button>
-            <button id="skHard" style="padding:4px 10px; font-size:0.8rem; min-width:auto; margin:2px;" class="btn" onclick="setSkDiff('hard')">Тяжелый</button>
-            <div style="margin-top:5px; color:#aaa;">Рекорд: <span id="skBest" style="color:#0fc">0</span> | Комбо: <span id="skMaxC" style="color:#9bf">0x</span></div>
-            <button class="btn" style="min-width:auto; padding:5px 15px; margin-top:8px; font-size:0.8rem;" onclick="toMenu()">В меню</button>
+    <div class="skill-box">
+        <canvas id="cvs" width="300" height="300"></canvas>
+    </div>
+    <div>Нажми <b>ПРОБЕЛ</b> для попадания!</div>
+
+    <div class="controls">
+        🔊 Громкость: <input type="range" id="vol" min="0" max="1" step="0.1" value="0.5"><br><br>
+        💀 Сложность: 
+        <button class="btn active" id="bNorm">Обычная</button>
+        <button class="btn" id="bHard">Тяжелая</button>
+        <div style="margin-top: 10px; font-size: 0.9rem; color: #aaa;">
+            Рекорд режима: <span id="best" style="color:#0fc">0</span> | 
+            Макс комбо: <span id="maxC" style="color:#9bf">0x</span>
         </div>
     </div>
 
-    <div id="snakeScreen" class="screen">
-        <div class="stats-bar">
-            <div>Счет: <span id="snScore" style="color:#0fc">0</span></div>
-            <div style="font-size: 1rem; color: #aaa; align-self: center;">WASD / Стрелки</div>
-        </div>
-        <div class="game-area">
-            <canvas id="snCanvas" width="300" height="300"></canvas>
-        </div>
-        <div class="bottom-panel">
-            <div style="color:#aaa;">Лучший счет: <span id="snBest" style="color:#fc0">0</span></div>
-            <button class="btn" style="min-width:auto; padding:5px 15px; margin-top:8px; font-size:0.8rem;" onclick="toMenu()">В меню</button>
-        </div>
-    </div>
     <script>
-        const screens = { menu: 'mainMenu', skill: 'skillScreen', snake: 'snakeScreen' };
-        let activeGame = '', aCtx = null, isOver = false;
-        const vol = document.getElementById('vol');
+        const cvs = document.getElementById('cvs'), ctx = cvs.getContext('2d');
+        const scoreEl = document.getElementById('score'), comboEl = document.getElementById('combo'), livesEl = document.getElementById('lives');
+        const menu = document.getElementById('menu'), fScore = document.getElementById('fScore'), fCombo = document.getElementById('fCombo'), restBtn = document.getElementById('restBtn');
+        const vol = document.getElementById('vol'), bNorm = document.getElementById('bNorm'), bHard = document.getElementById('bHard'), bestEl = document.getElementById('best'), maxCEl = document.getElementById('maxC');
+
+        let score = 0, combo = 0, lives = 3, isOver = false, diff = "normal", dir = 1, lastSwitch = 0, aCtx = null;
+        let hNormal = parseInt(localStorage.getItem('hN')) || 0, cNormal = parseInt(localStorage.getItem('cN')) || 0;
+        let hHard = parseInt(localStorage.getItem('hH')) || 0, cHard = parseInt(localStorage.getItem('cH')) || 0;
+        let maxSessionCombo = 0;
+
+        let angle = -0.2, speed = 0.04, tStart = 0, tEnd = 0, gStart = 0, gEnd = 0;
 
         function snd(f, d, v, t = "sine") {
             if (!aCtx) aCtx = new (window.AudioContext || window.webkitAudioContext)();
             if (vol.value <= 0) return;
             let o = aCtx.createOscillator(), g = aCtx.createGain();
-            o.type = f === 120 ? "triangle" : t; o.frequency.setValueAtTime(f, aCtx.currentTime);
-            g.gain.setValueAtTime(v * vol.value * 0.2, aCtx.currentTime);
+            o.type = t; o.frequency.setValueAtTime(f, aCtx.currentTime);
+            g.gain.setValueAtTime(f === 120 ? v * vol.value : v * vol.value * 0.3, aCtx.currentTime);
             g.gain.exponentialRampToValueAtTime(0.01, aCtx.currentTime + d);
-            o.connect(g); g.connect(aCtx.destination); o.start(); o.stop(aCtx.currentTime + d);
+            o.connect(g); g.connect(aCtx.destination);
+            o.start(); o.stop(aCtx.currentTime + d);
         }
 
-        function showScreen(id) {
-            Object.values(screens).forEach(s => document.getElementById(s).style.display = 'none');
-            document.getElementById('gameOverModal').style.display = 'none';
-            document.getElementById(id).style.display = 'flex';
+        function newZone() {
+            let scale = Math.max(0.4, 1 - 0.05 * combo);
+            tStart = Math.random() * Math.PI * 1.2 + 1.0;
+            tEnd = tStart + (Math.random() * 0.3 + 0.4) * scale;
+            if (diff === "hard") { gStart = -1; gEnd = -1; dir = Math.random() > 0.5 ? 1 : -1; } 
+            else { gStart = tStart; gEnd = tStart + 0.08 * scale; dir = 1; }
+            speed = 0.04 * Math.min(2.5, 1 + 0.08 * combo);
+            lastSwitch = Date.now();
         }
 
-        function toMenu() { isOver = true; activeGame = ''; showScreen(screens.menu); }
-        function showGameOver(title, details) { isOver = true; document.getElementById('goTitle').innerText = title; document.getElementById('goDetails').innerHTML = details; document.getElementById('gameOverModal').style.display = 'flex'; }
-        function restartCurrentGame() { if (activeGame) switchGame(activeGame); }
-
-        function switchGame(game) {
-            activeGame = game; isOver = false;
-            if (game === 'skill') { showScreen(screens.skill); initSkill(); }
-            if (game === 'snake') { showScreen(screens.snake); initSnake(); }
+        function draw() {
+            ctx.clearRect(0, 0, 300, 300);
+            ctx.lineWidth = 12;
+            ctx.beginPath(); ctx.arc(150, 150, 100, 0, Math.PI * 2); ctx.strokeStyle = '#333'; ctx.stroke();
+            ctx.beginPath(); ctx.arc(150, 150, 100, tStart, tEnd); ctx.strokeStyle = '#fff'; ctx.stroke();
+            if (gStart !== -1) { ctx.beginPath(); ctx.arc(150, 150, 100, gStart, gEnd); ctx.strokeStyle = '#fc0'; ctx.stroke(); }
+            ctx.save(); ctx.translate(150, 150); ctx.rotate(angle); ctx.lineWidth = 4; ctx.strokeStyle = '#f33';
+            ctx.beginPath(); ctx.moveTo(80, 0); ctx.lineTo(120, 0); ctx.stroke(); ctx.restore();
         }
 
-        // ==================== РЕАКЦИЯ ЛОГИКА ====================
-        const skCvs = document.getElementById('skCanvas'), skCtx = skCvs.getContext('2d');
-        let skScore = 0, skCombo = 0, skLives = 3, skDiff = "normal", skDir = 1, skLastSwitch = 0, skMaxC = 0, skAngle = -0.2, skSpeed = 0.04, skTS = 0, skTE = 0, skGS = 0, skGE = 0;
-
-        function setSkDiff(d) { skDiff = d; document.getElementById('skNorm').className = d === 'normal' ? 'btn-active' : 'btn'; document.getElementById('skHard').className = d === 'hard' ? 'btn-active' : 'btn'; skCombo = 0; skMaxC = 0; skScore = 0; generateSkZone(); updateSkUI(); }
-        function initSkill() { skScore = 0; skCombo = 0; skLives = 3; skMaxC = 0; skAngle = -0.2; generateSkZone(); updateSkUI(); }
-
-        function generateSkZone() {
-            let s = Math.max(0.4, 1 - 0.05 * skCombo); skTS = Math.random() * Math.PI * 1.2 + 1.0; skTE = skTS + (Math.random() * 0.3 + 0.4) * s;
-            if (skDiff === "hard") { skGS = -1; skGE = -1; skDir = Math.random() > 0.5 ? 1 : -1; } 
-            else { skGS = skTS; skGE = skTS + 0.08 * s; skDir = 1; }
-            skSpeed = 0.04 * Math.min(2.5, 1 + 0.08 * skCombo); skLastSwitch = Date.now();
-        }
-
-        function updateSkUI() {
-            document.getElementById('skScore').innerText = skScore; document.getElementById('skCombo').innerText = skCombo + "x"; document.getElementById('skLives').innerText = "❤️".repeat(skLives);
-            document.getElementById('skBest').innerText = localStorage.getItem('skH_' + skDiff) || 0; document.getElementById('skMaxC').innerText = (localStorage.getItem('skC_' + skDiff) || 0) + "x";
-        }
-
-        function checkSkill() {
-            if (isOver || activeGame !== 'skill') return;
-            let a = skAngle % (Math.PI * 2); if (a < 0) a += Math.PI * 2;
-            if (skDiff !== "hard" && a >= skGS && a <= skGE) { skCombo++; skScore += 300 * skCombo; if (skCombo > skMaxC) skMaxC = skCombo; snd(880, 0.1, 0.2); generateSkZone(); } 
-            else if (a >= skTS && a <= skTE) { skCombo += skDiff === "hard" ? 0.5 : 1; skScore += Math.floor(100 * skCombo); if (skCombo > skMaxC) skMaxC = skCombo; snd(600, 0.15, 0.2); generateSkZone(); } 
-            else {
-                skLives--; snd(120, 0.4, 0.4); skCombo = 0;
-                if (skLives <= 0) {
-                    if (skScore > (localStorage.getItem('skH_' + skDiff) || 0)) localStorage.setItem('skH_' + skDiff, skScore);
-                    if (skMaxC > (localStorage.getItem('skC_' + skDiff) || 0)) localStorage.setItem('skC_' + skDiff, skMaxC);
-                    let f = skScore === 0 ? "Вы вообще нажимали кнопки? 🗿" : skScore >= 1000 ? "Отличная реакция, супер! 🔥" : "Хорошая попытка! 🫡";
-                    showGameOver("Закончились жизни! ❌", `Очки: ${skScore}<br>Комбо: ${skMaxC}x<br><br><i>${f}</i>`);
-                } else { generateSkZone(); }
+        function check() {
+            if (isOver) return;
+            let a = angle % (Math.PI * 2); if (a < 0) a += Math.PI * 2;
+            if (diff !== "hard" && a >= gStart && a <= gEnd) {
+                combo++; score += 300 * combo; if (combo > maxSessionCombo) maxSessionCombo = combo;
+                snd(880, 0.1, 0.2); newZone();
+            } else if (a >= tStart && a <= tEnd) {
+                combo += diff === "hard" ? 0.5 : 1; score += Math.floor(100 * combo); if (combo > maxSessionCombo) maxSessionCombo = combo;
+                snd(600, 0.15, 0.2); newZone();
+            } else {
+                lives--; snd(120, 0.4, 0.4, "triangle"); combo = 0;
+                if (lives <= 0) {
+                    isOver = true; fScore.innerText = score; fCombo.innerText = maxSessionCombo + "x";
+                    if (diff === "normal") {
+                        if (score > hNormal) { hNormal = score; localStorage.setItem('hN', hNormal); }
+                        if (maxSessionCombo > cNormal) { cNormal = maxSessionCombo; localStorage.setItem('cN', cNormal); }
+                    } else {
+                        if (score > hHard) { hHard = score; localStorage.setItem('hH', hHard); }
+                        if (maxSessionCombo > cHard) { cHard = maxSessionCombo; localStorage.setItem('cH', cHard); }
+                    }
+                    menu.style.display = "flex";
+                } else { newZone(); }
             }
-            updateSkUI();
+            ui();
         }
 
-        // ==================== ЛОГИКА: ЗМЕЙКА ====================
-        const snCvs = document.getElementById('snCanvas'), snCtx = snCvs.getContext('2d');
-        let snake = [], food = {}, snDir = { x: 1, y: 0 }, snNextDir = { x: 1, y: 0 }, snScore = 0, snTimer = null;
-
-        function initSnake() { snake = [{ x: 5, y: 10 }, { x: 4, y: 10 }, { x: 3, y: 10 }]; snDir = { x: 1, y: 0 }; snNextDir = { x: 1, y: 0 }; snScore = 0; document.getElementById('snScore').innerText = snScore; document.getElementById('snBest').innerText = localStorage.getItem('snB') || 0; spawnFood(); clearInterval(snTimer); snTimer = setInterval(moveSnake, 130); }
-        function spawnFood() { food = { x: Math.floor(Math.random() * 15), y: Math.floor(Math.random() * 15) }; if (snake.some(s => s.x === food.x && s.y === food.y)) spawnFood(); }
-
-        function moveSnake() {
-            if (isOver || activeGame !== 'snake') { clearInterval(snTimer); return; }
-            snDir = snNextDir; const h = { x: snake.x + snDir.x, y: snake.y + snDir.y };
-            if (h.x < 0 || h.x >= 15 || h.y < 0 || h.y >= 15 || snake.some(s => s.x === h.x && s.y === h.y)) {
-                clearInterval(snTimer); if (snScore > (localStorage.getItem('snB') || 0)) localStorage.setItem('snB', snScore);
-                let f = snScore < 5 ? "Червячок не вырос. 🪱" : "Отличный результат, хорошая длина! 🐉";
-                showGameOver("Вы врезались! ☠️", `Счет: ${snScore}<br><br><i>${f}</i>`); return;
-            }
-            snake.unshift(h);
-            if (h.x === food.x && h.y === food.y) { snScore++; document.getElementById('snScore').innerText = snScore; snd(800, 0.1, 0.2); spawnFood(); } else { snake.pop(); }
-            
-            snCtx.fillStyle = '#151515'; snCtx.fillRect(0, 0, 300, 300);
-            snCtx.strokeStyle = '#222'; for(let i=0; i<15; i++) { snCtx.strokeRect(i*20, 0, 20, 300); snCtx.strokeRect(0, i*20, 300, 20); }
-            snCtx.fillStyle = '#ff3366'; snCtx.beginPath(); snCtx.arc(food.x * 20 + 10, food.y * 20 + 10, 8, 0, Math.PI*2); snCtx.fill();
-            snake.forEach((s, i) => { snCtx.fillStyle = i === 0 ? '#33ff33' : '#00ffcc'; snCtx.beginPath(); snCtx.roundRect(s.x * 20 + 1, s.y * 20 + 1, 18, 18, 4); snCtx.fill(); });
+        function ui() {
+            scoreEl.innerText = score; comboEl.innerText = combo + "x"; livesEl.innerText = "❤️".repeat(lives);
+            if (diff === "normal") { bestEl.innerText = hNormal; maxCEl.innerText = cNormal + "x"; } 
+            else { bestEl.innerText = hHard; maxCEl.innerText = cHard + "x"; }
         }
 
-        function globalLoop() {
-            if (!isOver && activeGame === 'skill') {
-                skAngle += skSpeed * skDir;
-                if (skDiff === "hard" && Date.now() - skLastSwitch > 1500 && Math.random() < 0.005) { skDir *= -1; skLastSwitch = Date.now(); }
-                skCtx.clearRect(0, 0, 300, 300); skCtx.lineWidth = 12;
-                skCtx.beginPath(); skCtx.arc(150, 150, 100, 0, Math.PI * 2); skCtx.strokeStyle = '#333'; skCtx.stroke();
-                skCtx.beginPath(); skCtx.arc(150, 150, 100, skTS, skTE); skCtx.strokeStyle = '#fff'; skCtx.stroke();
-                if (skGS !== -1) { skCtx.beginPath(); skCtx.arc(150, 150, 100, skGS, skGE); skCtx.strokeStyle = '#fc0'; skCtx.stroke(); }
-                skCtx.save(); skCtx.translate(150, 150); skCtx.rotate(skAngle); skCtx.lineWidth = 4; skCtx.strokeStyle = '#f33';
-                skCtx.beginPath(); skCtx.moveTo(80, 0); skCtx.lineTo(120, 0); skCtx.stroke(); skCtx.restore();
+        function loop() {
+            if (!isOver) {
+                angle += speed * dir;
+                if (diff === "hard" && Date.now() - lastSwitch > 1500 && Math.random() < 0.005) { dir *= -1; lastSwitch = Date.now(); }
+                draw();
             }
-            requestAnimationFrame(globalLoop);
+            requestAnimationFrame(loop);
         }
 
-        window.addEventListener('keydown', e => {
-            if (e.code === "Space") { e.preventDefault(); if (isOver) restartCurrentGame(); else if (activeGame === 'skill') checkSkill(); }
-            if (activeGame === 'snake') {
-                if ((e.code === "KeyW" || e.code === "ArrowUp") && snDir.y !== 1) { e.preventDefault(); snNextDir = { x: 0, y: -1 }; }
-                if ((e.code === "KeyS" || e.code === "ArrowDown") && snDir.y !== -1) { e.preventDefault(); snNextDir = { x: 0, y: 1 }; }
-                if ((e.code === "KeyA" || e.code === "ArrowLeft") && snDir.x !== 1) { e.preventDefault(); snNextDir = { x: -1, y: 0 }; }
-                if ((e.code === "KeyD" || e.code === "ArrowRight") && snDir.x !== -1) { e.preventDefault(); snNextDir = { x: 1, y: 0 }; }
-            }
-        });
-        skCvs.addEventListener('click', () => { if (isOver) restartCurrentGame(); else checkSkill(); });
-        globalLoop();
+        function restart() { isOver = false; score = 0; combo = 0; maxSessionCombo = 0; lives = 3; angle = -0.2; menu.style.display = "none"; newZone(); ui(); }
+
+        bNorm.onclick = () => { if (isOver) return; diff = "normal"; bNorm.classList.add("active"); bHard.classList.remove("active"); newZone(); ui(); };
+        bHard.onclick = () => { if (isOver) return; diff = "hard"; bHard.classList.add("active"); bNorm.classList.remove("active"); newZone(); ui(); };
+        restBtn.onclick = restart;
+        window.addEventListener('keydown', e => { if (e.code === "Space") { e.preventDefault(); if (isOver) restart(); else check(); } });
+        cvs.addEventListener('click', () => { if (isOver) restart(); else check(); });
+
+        newZone(); ui(); loop();
     </script>
 </body>
 </html>
