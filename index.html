@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Всё в одном: Сборник Мини-Игр</title>
+    <title>Arcade Mini-Games Collection</title>
     <style>
         * { box-sizing: border-box; user-select: none; }
         body { margin: 0; padding: 0; background: #111; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; }
@@ -14,32 +14,31 @@
         .btn:hover { background: #333; border-color: #fc0; box-shadow: 0 0 10px rgba(255,204,0,0.4); }
         .btn-active { background: #fc0 !important; color: #111 !important; border-color: #fc0 !important; }
         .stats-bar { font-size: 1.3rem; margin-bottom: 15px; display: flex; gap: 20px; font-weight: bold; }
-        .game-area { position: relative; width: 300px; height: 300px; background: #151515; border: 2px solid #333; border-radius: 10px; }
+        .game-area { position: relative; width: 300px; height: 300px; background: #151515; border: 2px solid #333; border-radius: 10px; box-shadow: 0 0 15px rgba(0,0,0,0.5); }
         canvas { position: absolute; top: 0; left: 0; }
         .bottom-panel { background: #222; padding: 12px 20px; border-radius: 12px; border: 1px solid #333; margin-top: 15px; text-align: center; min-width: 300px; font-size: 0.9rem; }
-        #clickBtn { position: absolute; background: #ff3366; color: #fff; border: none; padding: 10px 20px; font-weight: bold; border-radius: 20px; cursor: pointer; font-size: 1.1rem; box-shadow: 0 0 15px #ff3366; }
         .snake-keys { display: grid; grid-template-columns: repeat(3, 50px); grid-template-rows: repeat(2, 50px); gap: 5px; margin-top: 10px; }
         .key-btn { background: #333; border: 1px solid #555; color: #fff; font-weight: bold; border-radius: 5px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+        #gameOverModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 200; }
     </style>
 </head>
 <body>
     <!-- ГЛАВНОЕ МЕНЮ -->
     <div id="mainMenu" class="screen active-screen">
-        <h1>Мини-Игры 🕹️</h1>
+        <h1>Ретро Аркады 🕹️</h1>
         <button class="btn" onclick="switchGame('skill')">🎯 Проверка реакции</button>
-        <button class="btn" onclick="switchGame('clicker')">⚡ Кликер на скорость</button>
-        <button class="btn" onclick="switchGame('snake')">🐍 Змейка</button>
-        <div style="margin-top: 30px;"><input type="range" id="vol" min="0" max="1" step="0.1" value="0.5"> 🔊 Звук</div>
+        <button class="btn" onclick="switchGame('snake')">🐍 Неоновая змейка</button>
+        <div style="margin-top: 30px; display: flex; align-items: center; gap: 10px;">🔊 <input type="range" id="vol" min="0" max="1" step="0.1" value="0.5"> Громкость</div>
     </div>
 
-    <!-- ЭКРАН ИГРЫ: ПРОВЕРКА РЕАКЦИИ -->
+    <!-- ЭКРАН ИГРЫ: ПРОВЕРКА ПЕАКЦИИ -->
     <div id="skillScreen" class="screen">
         <div class="stats-bar">
             <div>Очки: <span id="skScore" style="color:#f33">0</span></div>
             <div>Комбо: <span id="skCombo" style="color:#fc0">0x</span></div>
             <div>Жизни: <span id="skLives" style="color:#ff3366">❤️❤️❤️</span></div>
         </div>
-        <div class="game-area" style="background:transparent; border:none;">
+        <div class="game-area" style="background:transparent; border:none; box-shadow: none;">
             <canvas id="skCanvas" width="300" height="300"></canvas>
         </div>
         <div style="margin-top:10px; color:#888;">Нажми <b>ПРОБЕЛ</b> для попадания!</div>
@@ -51,25 +50,11 @@
         </div>
     </div>
 
-    <!-- ЭКРАН ИГРЫ: КЛИКЕР -->
-    <div id="clickScreen" class="screen">
-        <div class="stats-bar">
-            <div>Клики: <span id="clScore" style="color:#0fc">0</span></div>
-            <div>Время: <span id="clTime" style="color:#f33">10.0с</span></div>
-        </div>
-        <div class="game-area" id="clArea">
-            <button id="clickBtn" onclick="doClick()">КЛИК!</button>
-        </div>
-        <div class="bottom-panel">
-            <div style="color:#aaa;">Лучший результат: <span id="clBest" style="color:#fc0">0</span> кликов</div>
-            <button class="btn" style="min-width:auto; padding:5px 15px; margin-top:8px; font-size:0.8rem;" onclick="toMenu()">В меню</button>
-        </div>
-    </div>
-
     <!-- ЭКРАН ИГРЫ: ЗМЕЙКА -->
     <div id="snakeScreen" class="screen">
         <div class="stats-bar">
-            <div>Счет: <span id="snScore" style="color:#9bf">0</span></div>
+            <div>Счет: <span id="snScore" style="color:#0fc">0</span></div>
+            <div style="font-size: 1rem; color: #aaa; align-self: center;">Управление: WASD / Стрелки</div>
         </div>
         <div class="game-area">
             <canvas id="snCanvas" width="300" height="300"></canvas>
@@ -79,26 +64,49 @@
             <button class="key-btn" onclick="changeSnDir(-1,0)">◀</button><button class="key-btn" onclick="changeSnDir(0,1)">▼</button><button class="key-btn" onclick="changeSnDir(1,0)">▶</button>
         </div>
         <div class="bottom-panel">
-            <div style="color:#aaa;">Лучший счет: <span id="snBest" style="color:#0fc">0</span></div>
+            <div style="color:#aaa;">Лучший счет: <span id="snBest" style="color:#fc0">0</span></div>
             <button class="btn" style="min-width:auto; padding:5px 15px; margin-top:8px; font-size:0.8rem;" onclick="toMenu()">В меню</button>
         </div>
     </div>
 
     <!-- ОКНО КОНЦА ИГРЫ -->
-    <div id="gameOverModal" class="screen" style="background:rgba(0,0,0,0.95); z-index:200;">
+    <div id="gameOverModal">
         <h2 id="goTitle">Игра Окончена</h2>
         <p style="font-size:1.3rem;" id="goDetails"></p>
         <button class="btn" id="restartBtn" onclick="restartCurrentGame()">Играть снова (ПРОБЕЛ)</button>
         <button class="btn" onclick="toMenu()">В главное меню</button>
     </div>
     <script>
-        const screens = { menu: 'mainMenu', skill: 'skillScreen', clicker: 'clickScreen', snake: 'snakeScreen' };
-        let activeGame = '', aCtx = null, isOver = false;
+        const screens = { menu: 'mainMenu', skill: 'skillScreen', snake: 'snakeScreen' };
+        let activeGame = '', aCtx = null, isOver = false, bgmStarted = false;
         const vol = document.getElementById('vol');
 
-        function snd(f, d, v, t = "sine") {
+        // Ноты Тетриса (Коробейники) генерируемые математически
+        const notes =;
+        const durations =;
+
+        function initAudio() {
             if (!aCtx) aCtx = new (window.AudioContext || window.webkitAudioContext)();
-            if (vol.value <= 0) return;
+            if (!bgmStarted) { bgmStarted = true; playBGM(0); }
+        }
+
+        function playBGM(index) {
+            if (!aCtx || isOver || activeGame === '') { bgmStarted = false; return; }
+            if (index >= notes.length) index = 0;
+            let note = notes[index], duration = durations[index] * 0.14;
+            if (note > 0 && vol.value > 0) {
+                let osc = aCtx.createOscillator(), gainNode = aCtx.createGain();
+                osc.type = "triangle"; osc.frequency.setValueAtTime(note, aCtx.currentTime);
+                gainNode.gain.setValueAtTime(0.06 * vol.value, aCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, aCtx.currentTime + duration);
+                osc.connect(gainNode); gainNode.connect(aCtx.destination);
+                osc.start(); osc.stop(aCtx.currentTime + duration);
+            }
+            setTimeout(() => playBGM(index + 1), duration * 1000);
+        }
+
+        function snd(f, d, v, t = "sine") {
+            if (!aCtx || vol.value <= 0) return;
             let o = aCtx.createOscillator(), g = aCtx.createGain();
             o.type = t; o.frequency.setValueAtTime(f, aCtx.currentTime);
             g.gain.setValueAtTime(f === 120 ? v * vol.value : v * vol.value * 0.1, aCtx.currentTime);
@@ -124,8 +132,8 @@
 
         function switchGame(game) {
             activeGame = game; isOver = false;
+            initAudio();
             if (game === 'skill') { showScreen(screens.skill); initSkill(); }
-            if (game === 'clicker') { showScreen(screens.clicker); initClicker(); }
             if (game === 'snake') { showScreen(screens.snake); initSnake(); }
         }
 
@@ -152,7 +160,6 @@
             else { skGS = skTS; skGE = skTS + 0.08 * scale; skDir = 1; }
             skSpeed = 0.04 * Math.min(2.5, 1 + 0.08 * skCombo); skLastSwitch = Date.now();
         }
-
         function updateSkUI() {
             document.getElementById('skScore').innerText = skScore; document.getElementById('skCombo').innerText = skCombo + "x";
             document.getElementById('skLives').innerText = "❤️".repeat(skLives);
@@ -181,42 +188,25 @@
             updateSkUI();
         }
 
-        // ==================== 2. КЛИКЕР ЛОГИКА ====================
-        let clScore = 0, clTime = 10.0, clTimer = null;
-        function initClicker() {
-            clScore = 0; clTime = 10.0; clearInterval(clTimer);
-            document.getElementById('clScore').innerText = clScore;
-            document.getElementById('clTime').innerText = clTime.toFixed(1) + "с";
-            document.getElementById('clBest').innerText = localStorage.getItem('clB') || 0;
-            moveClickBtn();
-            clTimer = setInterval(() => {
-                clTime -= 0.1; if (clTime <= 0) { clTime = 0; endGameClicker(); }
-                document.getElementById('clTime').innerText = clTime.toFixed(1) + "с";
-            }, 100);
-        }
-        function moveClickBtn() {
-            const btn = document.getElementById('clickBtn');
-            btn.style.left = Math.random() * 180 + 10 + "px"; btn.style.top = Math.random() * 220 + 10 + "px";
-        }
-        function doClick() { if (isOver || clTime <= 0) return; clScore++; document.getElementById('clScore').innerText = clScore; snd(400 + clScore * 10, 0.05, 0.15); moveClickBtn(); }
-        function endGameClicker() {
-            clearInterval(clTimer); let b = localStorage.getItem('clB') || 0; if (clScore > b) localStorage.setItem('clB', clScore);
-            let f = clScore < 30 ? "Скорость кликов низкая, разомни пальцы! 🫵" : clScore < 60 ? "Хороший темп, отличная скорость! ⚡" : "Невероятно! Максимальная скорость кликов! 🤖";
-            showGameOver("Время вышло! ⏱️", `Всего кликов: ${clScore}<br><br><i>${f}</i>`);
-        }
-        // ==================== 3. ЗМЕЙКА ЛОГИКА ====================
+        // ==================== 2. ЗМЕЙКА ЛОГИКА (ОБНОВЛЕННАЯ С КРАСИВЫМ ВИЗУАЛОМ) ====================
         const snCvs = document.getElementById('snCanvas'), snCtx = snCvs.getContext('2d');
         let snake = [], food = {}, snDir = { x: 1, y: 0 }, snNextDir = { x: 1, y: 0 }, snScore = 0, snTimer = null;
+
         function initSnake() {
             snake = [{ x: 5, y: 10 }, { x: 4, y: 10 }, { x: 3, y: 10 }]; snDir = { x: 1, y: 0 }; snNextDir = { x: 1, y: 0 }; snScore = 0;
             document.getElementById('snScore').innerText = snScore; document.getElementById('snBest').innerText = localStorage.getItem('snB') || 0;
             spawnFood(); clearInterval(snTimer); snTimer = setInterval(moveSnake, 130);
         }
+
         function spawnFood() {
             food = { x: Math.floor(Math.random() * 15), y: Math.floor(Math.random() * 15) };
             if (snake.some(s => s.x === food.x && s.y === food.y)) spawnFood();
         }
-        function changeSnDir(x, y) { if (x !== -snDir.x && y !== -snDir.y) snNextDir = { x: x, y: y }; }
+
+        function changeSnDir(x, y) { 
+            if (x !== -snDir.x && y !== -snDir.y) snNextDir = { x: x, y: y }; 
+        }
+
         function moveSnake() {
             if (isOver || activeGame !== 'snake') { clearInterval(snTimer); return; }
             snDir = snNextDir; const head = { x: snake[0].x + snDir.x, y: snake[0].y + snDir.y };
@@ -230,10 +220,28 @@
             else { snake.pop(); }
             drawSnake();
         }
+
         function drawSnake() {
-            snCtx.clearRect(0, 0, 300, 300); snCtx.fillStyle = '#151515'; snCtx.fillRect(0, 0, 300, 300);
-            snCtx.fillStyle = '#ff3366'; snCtx.fillRect(food.x * 20 + 2, food.y * 20 + 2, 16, 16);
-            snake.forEach((s, i) => { snCtx.fillStyle = i === 0 ? '#33ff33' : '#00ffcc'; snCtx.fillRect(s.x * 20 + 1, s.y * 20 + 1, 18, 18); });
+            snCtx.clearRect(0, 0, 300, 300);
+            // Красивая сетка фона
+            snCtx.fillStyle = '#151515'; snCtx.fillRect(0, 0, 300, 300);
+            snCtx.strokeStyle = '#222'; snCtx.lineWidth = 1;
+            for(let i=0; i<15; i++) { snCtx.strokeRect(i*20, 0, 20, 300); snCtx.strokeRect(0, i*20, 300, 20); }
+            // Неоновое яблоко с тенью
+            snCtx.fillStyle = '#ff3366'; snCtx.shadowBlur = 10; snCtx.shadowColor = '#ff3366';
+            snCtx.beginPath(); snCtx.arc(food.x * 20 + 10, food.y * 20 + 10, 8, 0, Math.PI*2); snCtx.fill();
+            // Градиентная неоновая змейка
+            snake.forEach((s, i) => {
+                snCtx.fillStyle = i === 0 ? '#33ff33' : '#00ffcc';
+                snCtx.shadowBlur = i === 0 ? 12 : 5;
+                snCtx.shadowColor = i === 0 ? '#33ff33' : '#00ffcc';
+                // Закругленные кубики тела
+                let r = 4;
+                snCtx.beginPath();
+                snCtx.roundRect(s.x * 20 + 1, s.y * 20 + 1, 18, 18, r);
+                snCtx.fill();
+            });
+            snCtx.shadowBlur = 0; // Сброс свечения
         }
 
         function globalLoop() {
@@ -250,18 +258,19 @@
             requestAnimationFrame(globalLoop);
         }
 
+        // УПРАВЛЕНИЕ КЛАВИАТУРОЙ (WASD + СТРЕЛКИ)
         window.addEventListener('keydown', e => {
             if (e.code === "Space") { e.preventDefault(); if (isOver) restartCurrentGame(); else if (activeGame === 'skill') checkSkill(); }
             if (activeGame === 'snake') {
-                if (e.code === "ArrowUp" && snDir.y !== 1) { e.preventDefault(); changeSnDir(0, -1); }
-                if (e.code === "ArrowDown" && snDir.y !== -1) { e.preventDefault(); changeSnDir(0, 1); }
-                if (e.code === "ArrowLeft" && snDir.x !== 1) { e.preventDefault(); changeSnDir(-1, 0); }
-                if (e.code === "ArrowRight" && snDir.x !== -1) { e.preventDefault(); changeSnDir(1, 0); }
+                if ((e.code === "KeyW" || e.code === "ArrowUp") && snDir.y !== 1) { e.preventDefault(); changeSnDir(0, -1); }
+                if ((e.code === "KeyS" || e.code === "ArrowDown") && snDir.y !== -1) { e.preventDefault(); changeSnDir(0, 1); }
+                if ((e.code === "KeyA" || e.code === "ArrowLeft") && snDir.x !== 1) { e.preventDefault(); changeSnDir(-1, 0); }
+                if ((e.code === "KeyD" || e.code === "ArrowRight") && snDir.x !== -1) { e.preventDefault(); changeSnDir(1, 0); }
             }
         });
         skCvs.addEventListener('click', () => { if (isOver) restartCurrentGame(); else checkSkill(); });
 
-        volumeSlider.oninput = e => { globalVolume = parseFloat(e.target.value); };
+        vol.oninput = e => { if(audioCtx) audioCtx.resume(); };
         globalLoop();
     </script>
 </body>
