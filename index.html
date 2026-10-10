@@ -3,282 +3,266 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Мини-Игры: Проверка Реакции</title>
+    <title>Всё в одном: Сборник Мини-Игр</title>
     <style>
         * { box-sizing: border-box; user-select: none; }
         body { margin: 0; padding: 0; background: #111; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; }
-        .game-box { display: flex; flex-direction: column; align-items: center; position: relative; margin-bottom: 10px; }
-        .skill-check-container { position: relative; width: 300px; height: 300px; margin-bottom: 10px; }
-        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; }
-        .stats { text-align: center; font-size: 1.4rem; margin-bottom: 15px; display: flex; gap: 25px; justify-content: center; align-items: center; flex-wrap: wrap; }
-        .score-val, .combo-val, .best-val, .max-val { font-weight: bold; color: #f33; }
-        .combo-val { color: #fc0; }
-        .best-val { color: #0fc; }
-        .max-val { color: #9bf; }
-        .lives-val { color: #ff3366; font-size: 1.5rem; letter-spacing: 2px; }
-        .controls { display: flex; flex-direction: column; gap: 10px; align-items: center; background: #222; padding: 15px 25px; border-radius: 15px; border: 1px solid #333; margin-top: 15px; min-width: 320px; }
-        .controls-row { display: flex; gap: 15px; align-items: center; font-size: .9rem; color: #ccc; justify-content: center; width: 100%; }
-        .records-row { border-top: 1px solid #444; padding-top: 8px; margin-top: 5px; flex-direction: column; gap: 5px; }
-        .diff-btn { background: #333; color: #aaa; border: 1px solid #555; padding: 6px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: all .2s; }
-        .diff-btn.active { background: #ffcc00; color: #111; border-color: #ffcc00; box-shadow: 0 0 10px #ffcc00; }
-        input[type=range] { background: #333; color: #fff; border: 1px solid #555; border-radius: 5px; cursor: pointer; }
-        .instructions { color: #888; font-size: .9rem; margin-top: 5px; text-align: center; }
-        #gameOverModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; align-items: center; justify-content: center; z-index: 100; }
-        #gameOverBox { background: #222; padding: 40px; border-radius: 15px; border: 1px solid #444; text-align: center; box-shadow: 0 0 20px rgba(255,0,0,0.2); }
-        #gameOverBox h2 { color: #f33; margin-top: 0; font-size: 2rem; text-transform: uppercase; }
-        #gameOverBox p { font-size: 1.2rem; margin: 10px 0; }
-        #restartBtn { padding: 12px 30px; font-size: 1.1rem; background: #ffcc00; color: #111; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 20px; }
+        .screen { display: none; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100vh; position: absolute; top: 0; left: 0; }
+        .active-screen { display: flex; }
+        h1, h2 { color: #fc0; text-transform: uppercase; margin-bottom: 20px; text-shadow: 0 0 10px rgba(255,204,0,0.3); }
+        .btn { background: #222; color: #fff; border: 2px solid #555; padding: 12px 24px; margin: 8px; cursor: pointer; font-weight: bold; border-radius: 8px; font-size: 1.1rem; transition: all 0.2s; min-width: 200px; text-align: center; }
+        .btn:hover { background: #333; border-color: #fc0; box-shadow: 0 0 10px rgba(255,204,0,0.4); }
+        .btn-active { background: #fc0 !important; color: #111 !important; border-color: #fc0 !important; }
+        .stats-bar { font-size: 1.3rem; margin-bottom: 15px; display: flex; gap: 20px; font-weight: bold; }
+        .game-area { position: relative; width: 300px; height: 300px; background: #151515; border: 2px solid #333; border-radius: 10px; }
+        canvas { position: absolute; top: 0; left: 0; }
+        .bottom-panel { background: #222; padding: 12px 20px; border-radius: 12px; border: 1px solid #333; margin-top: 15px; text-align: center; min-width: 300px; font-size: 0.9rem; }
+        #clickBtn { position: absolute; background: #ff3366; color: #fff; border: none; padding: 10px 20px; font-weight: bold; border-radius: 20px; cursor: pointer; font-size: 1.1rem; box-shadow: 0 0 15px #ff3366; }
+        .snake-keys { display: grid; grid-template-columns: repeat(3, 50px); grid-template-rows: repeat(2, 50px); gap: 5px; margin-top: 10px; }
+        .key-btn { background: #333; border: 1px solid #555; color: #fff; font-weight: bold; border-radius: 5px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
     </style>
 </head>
 <body>
+    <!-- ГЛАВНОЕ МЕНЮ -->
+    <div id="mainMenu" class="screen active-screen">
+        <h1>Мини-Игры 🕹️</h1>
+        <button class="btn" onclick="switchGame('skill')">🎯 Проверка реакции</button>
+        <button class="btn" onclick="switchGame('clicker')">⚡ Кликер на скорость</button>
+        <button class="btn" onclick="switchGame('snake')">🐍 Змейка</button>
+        <div style="margin-top: 30px;"><input type="range" id="vol" min="0" max="1" step="0.1" value="0.5"> 🔊 Звук</div>
+    </div>
 
-    <div id="gameOverModal">
-        <div id="gameOverBox">
-            <h2>Игра Окончена</h2>
-            <p>Ваш результат: <span id="finalScore" style="font-weight:bold;color:#ffcc00">0</span> очков</p>
-            <p>Макс. комбо: <span id="finalCombo" style="font-weight:bold;color:#ffcc00">0x</span></p>
-            <p id="phrase" style="font-style: italic; color: #aaa; margin-top: 15px; font-size: 1rem; max-width: 350px;"></p>
-            <button id="restartBtn">Играть заново (ПРОБЕЛ)</button>
+    <!-- ЭКРАН ИГРЫ: ПРОВЕРКА РЕАКЦИИ -->
+    <div id="skillScreen" class="screen">
+        <div class="stats-bar">
+            <div>Очки: <span id="skScore" style="color:#f33">0</span></div>
+            <div>Комбо: <span id="skCombo" style="color:#fc0">0x</span></div>
+            <div>Жизни: <span id="skLives" style="color:#ff3366">❤️❤️❤️</span></div>
+        </div>
+        <div class="game-area" style="background:transparent; border:none;">
+            <canvas id="skCanvas" width="300" height="300"></canvas>
+        </div>
+        <div style="margin-top:10px; color:#888;">Нажми <b>ПРОБЕЛ</b> для попадания!</div>
+        <div class="bottom-panel">
+            Режим: <button class="btn-active" id="skNorm" style="padding:4px 10px; font-size:0.8rem; min-width:auto; margin:2px;" onclick="setSkDiff('normal')">Обычный</button>
+            <button id="skHard" style="padding:4px 10px; font-size:0.8rem; min-width:auto; margin:2px;" class="btn" onclick="setSkDiff('hard')">Тяжелый</button>
+            <div style="margin-top:5px; color:#aaa;">Рекорд: <span id="skBest" style="color:#0fc">0</span> | Комбо: <span id="skMaxC" style="color:#9bf">0x</span></div>
+            <button class="btn" style="min-width:auto; padding:5px 15px; margin-top:8px; font-size:0.8rem;" onclick="toMenu()">В меню</button>
         </div>
     </div>
 
-    <div class="stats">
-        <div>Очки: <span class="score-val" id="score">0</span></div>
-        <div>Комбо: <span class="combo-val" id="combo">0x</span></div>
-        <div>Жизни: <span class="lives-val" id="lives">❤️❤️❤️</span></div>
+    <!-- ЭКРАН ИГРЫ: КЛИКЕР -->
+    <div id="clickScreen" class="screen">
+        <div class="stats-bar">
+            <div>Клики: <span id="clScore" style="color:#0fc">0</span></div>
+            <div>Время: <span id="clTime" style="color:#f33">10.0с</span></div>
+        </div>
+        <div class="game-area" id="clArea">
+            <button id="clickBtn" onclick="doClick()">КЛИК!</button>
+        </div>
+        <div class="bottom-panel">
+            <div style="color:#aaa;">Лучший результат: <span id="clBest" style="color:#fc0">0</span> кликов</div>
+            <button class="btn" style="min-width:auto; padding:5px 15px; margin-top:8px; font-size:0.8rem;" onclick="toMenu()">В меню</button>
+        </div>
     </div>
 
-    <div class="game-box" id="gameBox">
-        <div class="skill-check-container">
-            <canvas id="gameCanvas" width="300" height="300"></canvas>
+    <!-- ЭКРАН ИГРЫ: ЗМЕЙКА -->
+    <div id="snakeScreen" class="screen">
+        <div class="stats-bar">
+            <div>Счет: <span id="snScore" style="color:#9bf">0</span></div>
         </div>
-        <div class="instructions">Нажми <b>ПРОБЕЛ</b> для попадания!</div>
-        
-        <div class="controls">
-            <div class="controls-row">🔊 Громкость: <input type="range" id="volumeSlider" min="0" max="1" step="0.1" value="0.5"></div>
-            <div class="controls-row">💀 Сложность: <button class="diff-btn active" id="btnNormal">Обычная</button> <button class="diff-btn" id="btnHard">Тяжелая</button></div>
-            <div class="controls-row records-row">
-                <div>Рекорд режима: <span class="best-val" id="bestScore">0</span></div>
-                <div>Макс. комбо режима: <span class="max-val" id="maxCombo">0x</span></div>
-            </div>
+        <div class="game-area">
+            <canvas id="snCanvas" width="300" height="300"></canvas>
         </div>
+        <div class="snake-keys">
+            <div></div><button class="key-btn" onclick="changeSnDir(0,-1)">▲</button><div></div>
+            <button class="key-btn" onclick="changeSnDir(-1,0)">◀</button><button class="key-btn" onclick="changeSnDir(0,1)">▼</button><button class="key-btn" onclick="changeSnDir(1,0)">▶</button>
+        </div>
+        <div class="bottom-panel">
+            <div style="color:#aaa;">Лучший счет: <span id="snBest" style="color:#0fc">0</span></div>
+            <button class="btn" style="min-width:auto; padding:5px 15px; margin-top:8px; font-size:0.8rem;" onclick="toMenu()">В меню</button>
+        </div>
+    </div>
+
+    <!-- ОКНО КОНЦА ИГРЫ -->
+    <div id="gameOverModal" class="screen" style="background:rgba(0,0,0,0.95); z-index:200;">
+        <h2 id="goTitle">Игра Окончена</h2>
+        <p style="font-size:1.3rem;" id="goDetails"></p>
+        <button class="btn" id="restartBtn" onclick="restartCurrentGame()">Играть снова (ПРОБЕЛ)</button>
+        <button class="btn" onclick="toMenu()">В главное меню</button>
     </div>
     <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const scoreEl = document.getElementById('score');
-        const bestScoreEl = document.getElementById('bestScore');
-        const comboEl = document.getElementById('combo');
-        const maxComboEl = document.getElementById('maxCombo');
-        const livesEl = document.getElementById('lives');
-        const gameBox = document.getElementById('gameBox');
-        const gameOverModal = document.getElementById('gameOverModal');
-        const finalScore = document.getElementById('finalScore');
-        const finalCombo = document.getElementById('finalCombo');
-        const phraseEl = document.getElementById('phrase');
-        const restartBtn = document.getElementById('restartBtn');
-        const volumeSlider = document.getElementById('volumeSlider');
-        const btnNormal = document.getElementById('btnNormal');
-        const btnHard = document.getElementById('btnHard');
+        const screens = { menu: 'mainMenu', skill: 'skillScreen', clicker: 'clickScreen', snake: 'snakeScreen' };
+        let activeGame = '', aCtx = null, isOver = false;
+        const vol = document.getElementById('vol');
 
-        let score = 0, combo = 0, lives = 3, audioCtx = null, isGameOver = false, globalVolume = 0.5, currentDir = 1, lastDirectionSwitch = 0, currentDiff = "normal";
-        let normalHighScore = parseInt(localStorage.getItem('highscore_normal')) || 0;
-        let normalMaxCombo = parseInt(localStorage.getItem('maxcombo_normal')) || 0;
-        let hardHighScore = parseInt(localStorage.getItem('highscore_hard')) || 0;
-        let hardMaxCombo = parseInt(localStorage.getItem('maxcombo_hard')) || 0;
-        let currentSessionMaxCombo = 0;
-
-        const center = 150, radius = 100;
-        let pointerAngle = -0.2, baseSpeed = 0.04, currentSpeed = baseSpeed, targetStart = 0, targetEnd = 0, greatStart = 0, greatEnd = 0;
-
-        const phrases = {
-            zero: [
-                "Вы вообще нажимали на кнопки? 🗿",
-                "Промах сразу на старте. Попробуйте еще раз!",
-                "Нужно немного потренироваться. Соберитесь!"
-            ],
-            low: [
-                "Хорошая попытка, но рекорд пока далеко! 🫡",
-                "Неплохо для разминки, продолжайте в том же духе.",
-                "Руки немного трясутся? Бывает, попробуйте еще раз!"
-            ],
-            high: [
-                "Отлично! Великолепная скорость реакции! 🔥",
-                "Вы играете как профессионал, отличный счет!",
-                "Потрясающий результат! Практически идеальный ран."
-            ]
-        };
-
-        function getComment(currentScore) {
-            let list = phrases.low;
-            if (currentScore === 0) list = phrases.zero;
-            else if (currentScore >= 1000) list = phrases.high;
-            return list[Math.floor(Math.random() * list.length)];
+        function snd(f, d, v, t = "sine") {
+            if (!aCtx) aCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (vol.value <= 0) return;
+            let o = aCtx.createOscillator(), g = aCtx.createGain();
+            o.type = t; o.frequency.setValueAtTime(f, aCtx.currentTime);
+            g.gain.setValueAtTime(f === 120 ? v * vol.value : v * vol.value * 0.1, aCtx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.01, aCtx.currentTime + d);
+            o.connect(g); g.connect(aCtx.destination);
+            o.start(); o.stop(aCtx.currentTime + d);
         }
 
-        function initAudio() {
-            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function showScreen(id) {
+            Object.values(screens).forEach(s => document.getElementById(s).style.display = 'none');
+            document.getElementById('gameOverModal').style.display = 'none';
+            document.getElementById(id).style.display = 'flex';
         }
 
-        function playSound(freq, duration, vol, type = "sine") {
-            if (!audioCtx || globalVolume <= 0) return;
-            let osc = audioCtx.createOscillator();
-            let gainNode = audioCtx.createGain();
-            osc.type = type;
-            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            gainNode.gain.setValueAtTime(freq === 120 ? vol * globalVolume : vol * globalVolume * 0.1, audioCtx.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-            osc.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + duration);
+        function toMenu() { isOver = true; activeGame = ''; showScreen(screens.menu); }
+
+        function showGameOver(title, details) {
+            isOver = true;
+            document.getElementById('goTitle').innerText = title;
+            document.getElementById('goDetails').innerHTML = details;
+            document.getElementById('gameOverModal').style.display = 'flex';
         }
 
-        function generateNewZone() {
-            const isHard = currentDiff === "hard";
-            const zoneScale = Math.max(.4, 1 - .05 * combo);
-            const sizeGood = (Math.random() * 0.3 + 0.4) * zoneScale;
-            const sizeGreat = 0.08 * zoneScale;
+        function switchGame(game) {
+            activeGame = game; isOver = false;
+            if (game === 'skill') { showScreen(screens.skill); initSkill(); }
+            if (game === 'clicker') { showScreen(screens.clicker); initClicker(); }
+            if (game === 'snake') { showScreen(screens.snake); initSnake(); }
+        }
 
-            targetStart = Math.random() * Math.PI * 1.2 + 1.0;
-            targetEnd = targetStart + sizeGood;
+        function restartCurrentGame() { if (activeGame) switchGame(activeGame); }
 
-            if (isHard) {
-                greatStart = -1; greatEnd = -1;
-                currentDir = Math.random() > 0.5 ? 1 : -1;
+        // ==================== 1. ПРОВЕРКА РЕАКЦИИ ЛОГИКА ====================
+        const skCvs = document.getElementById('skCanvas'), skCtx = skCvs.getContext('2d');
+        let skScore = 0, skCombo = 0, skLives = 3, skDiff = "normal", skDir = 1, skLastSwitch = 0, skMaxSessionC = 0;
+        let skAngle = -0.2, skSpeed = 0.04, skTS = 0, skTE = 0, skGS = 0, skGE = 0;
+
+        function setSkDiff(d) {
+            skDiff = d;
+            document.getElementById('skNorm').className = d === 'normal' ? 'btn-active' : 'btn';
+            document.getElementById('skHard').className = d === 'hard' ? 'btn-active' : 'btn';
+            skCombo = 0; skMaxSessionC = 0; skScore = 0; generateSkZone(); updateSkUI();
+        }
+
+        function initSkill() { skScore = 0; skCombo = 0; skLives = 3; skMaxSessionC = 0; skAngle = -0.2; generateSkZone(); updateSkUI(); }
+
+        function generateSkZone() {
+            let scale = Math.max(0.4, 1 - 0.05 * skCombo);
+            skTS = Math.random() * Math.PI * 1.2 + 1.0; skTE = skTS + (Math.random() * 0.3 + 0.4) * scale;
+            if (skDiff === "hard") { skGS = -1; skGE = -1; skDir = Math.random() > 0.5 ? 1 : -1; } 
+            else { skGS = skTS; skGE = skTS + 0.08 * scale; skDir = 1; }
+            skSpeed = 0.04 * Math.min(2.5, 1 + 0.08 * skCombo); skLastSwitch = Date.now();
+        }
+
+        function updateSkUI() {
+            document.getElementById('skScore').innerText = skScore; document.getElementById('skCombo').innerText = skCombo + "x";
+            document.getElementById('skLives').innerText = "❤️".repeat(skLives);
+            let h = parseInt(localStorage.getItem('skH_' + skDiff)) || 0, c = parseInt(localStorage.getItem('skC_' + skDiff)) || 0;
+            document.getElementById('skBest').innerText = h; document.getElementById('skMaxC').innerText = c + "x";
+        }
+
+        function checkSkill() {
+            if (isOver || activeGame !== 'skill') return;
+            let a = skAngle % (Math.PI * 2); if (a < 0) a += Math.PI * 2;
+            if (skDiff !== "hard" && a >= skGS && a <= skGE) {
+                skCombo++; skScore += 300 * skCombo; if (skCombo > skMaxSessionC) skMaxSessionC = skCombo;
+                snd(880, 0.1, 0.2); generateSkZone();
+            } else if (a >= skTS && a <= skTE) {
+                skCombo += skDiff === "hard" ? 0.5 : 1; skScore += Math.floor(100 * skCombo); if (skCombo > skMaxSessionC) skMaxSessionC = skCombo;
+                snd(600, 0.15, 0.2); generateSkZone();
             } else {
-                greatStart = targetStart;
-                greatEnd = targetStart + sizeGreat;
-                currentDir = 1;
+                skLives--; snd(120, 0.4, 0.4, "triangle"); skCombo = 0;
+                if (skLives <= 0) {
+                    let h = localStorage.getItem('skH_' + skDiff) || 0; if (skScore > h) localStorage.setItem('skH_' + skDiff, skScore);
+                    let c = localStorage.getItem('skC_' + skDiff) || 0; if (skMaxSessionC > c) localStorage.setItem('skC_' + skDiff, skMaxSessionC);
+                    let f = skScore === 0 ? "Промах! Попробуй сконцентрироваться. 🗿" : skScore >= 1000 ? "Отличный результат, реакция на высоте! 🔥" : "Хорошая попытка, можно улучшить счет! 🫡";
+                    showGameOver("Закончились жизни! ❌", `Очки: ${skScore}<br>Комбо: ${skMaxSessionC}x<br><br><i>${f}</i>`);
+                } else { generateSkZone(); }
             }
-            currentSpeed = baseSpeed * Math.min(2.5, 1 + .08 * combo);
-            lastDirectionSwitch = Date.now();
+            updateSkUI();
         }
 
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            ctx.beginPath();
-            ctx.arc(center, center, radius, 0, Math.PI * 2);
-            ctx.strokeStyle = '#333';
-            ctx.lineWidth = 12;
-            ctx.stroke();
-
-            ctx.beginPath();
-            ctx.arc(center, center, radius, targetStart, targetEnd);
-            ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = 12;
-            ctx.stroke();
-
-            if (greatStart !== -1) {
-                ctx.beginPath();
-                ctx.arc(center, center, radius, greatStart, greatEnd);
-                ctx.strokeStyle = '#ffcc00';
-                ctx.lineWidth = 14;
-                ctx.stroke();
+        // ==================== 2. КЛИКЕР ЛОГИКА ====================
+        let clScore = 0, clTime = 10.0, clTimer = null;
+        function initClicker() {
+            clScore = 0; clTime = 10.0; clearInterval(clTimer);
+            document.getElementById('clScore').innerText = clScore;
+            document.getElementById('clTime').innerText = clTime.toFixed(1) + "с";
+            document.getElementById('clBest').innerText = localStorage.getItem('clB') || 0;
+            moveClickBtn();
+            clTimer = setInterval(() => {
+                clTime -= 0.1; if (clTime <= 0) { clTime = 0; endGameClicker(); }
+                document.getElementById('clTime').innerText = clTime.toFixed(1) + "с";
+            }, 100);
+        }
+        function moveClickBtn() {
+            const btn = document.getElementById('clickBtn');
+            btn.style.left = Math.random() * 180 + 10 + "px"; btn.style.top = Math.random() * 220 + 10 + "px";
+        }
+        function doClick() { if (isOver || clTime <= 0) return; clScore++; document.getElementById('clScore').innerText = clScore; snd(400 + clScore * 10, 0.05, 0.15); moveClickBtn(); }
+        function endGameClicker() {
+            clearInterval(clTimer); let b = localStorage.getItem('clB') || 0; if (clScore > b) localStorage.setItem('clB', clScore);
+            let f = clScore < 30 ? "Скорость кликов низкая, разомни пальцы! 🫵" : clScore < 60 ? "Хороший темп, отличная скорость! ⚡" : "Невероятно! Максимальная скорость кликов! 🤖";
+            showGameOver("Время вышло! ⏱️", `Всего кликов: ${clScore}<br><br><i>${f}</i>`);
+        }
+        // ==================== 3. ЗМЕЙКА ЛОГИКА ====================
+        const snCvs = document.getElementById('snCanvas'), snCtx = snCvs.getContext('2d');
+        let snake = [], food = {}, snDir = { x: 1, y: 0 }, snNextDir = { x: 1, y: 0 }, snScore = 0, snTimer = null;
+        function initSnake() {
+            snake = [{ x: 5, y: 10 }, { x: 4, y: 10 }, { x: 3, y: 10 }]; snDir = { x: 1, y: 0 }; snNextDir = { x: 1, y: 0 }; snScore = 0;
+            document.getElementById('snScore').innerText = snScore; document.getElementById('snBest').innerText = localStorage.getItem('snB') || 0;
+            spawnFood(); clearInterval(snTimer); snTimer = setInterval(moveSnake, 130);
+        }
+        function spawnFood() {
+            food = { x: Math.floor(Math.random() * 15), y: Math.floor(Math.random() * 15) };
+            if (snake.some(s => s.x === food.x && s.y === food.y)) spawnFood();
+        }
+        function changeSnDir(x, y) { if (x !== -snDir.x && y !== -snDir.y) snNextDir = { x: x, y: y }; }
+        function moveSnake() {
+            if (isOver || activeGame !== 'snake') { clearInterval(snTimer); return; }
+            snDir = snNextDir; const head = { x: snake[0].x + snDir.x, y: snake[0].y + snDir.y };
+            if (head.x < 0 || head.x >= 15 || head.y < 0 || head.y >= 15 || snake.some(s => s.x === head.x && s.y === head.y)) {
+                clearInterval(snTimer); let b = localStorage.getItem('snB') || 0; if (snScore > b) localStorage.setItem('snB', snScore);
+                let f = snScore < 5 ? "Небольшой счет, попробуй еще раз. 🪱" : snScore < 15 ? "Хороший результат, змейка выросла!" : "Потрясающе! Установлен отличный рекорд! 🐉";
+                showGameOver("Столкновение! ☠️", `Счет: ${snScore}<br><br><i>${f}</i>`); return;
             }
-
-            ctx.save();
-            ctx.translate(center, center);
-            ctx.rotate(pointerAngle);
-            ctx.beginPath();
-            ctx.moveTo(radius - 20, 0);
-            ctx.lineTo(radius + 20, 0);
-            ctx.strokeStyle = '#ff3333';
-            ctx.lineWidth = 4;
-            ctx.stroke();
-            ctx.restore();
+            snake.unshift(head);
+            if (head.x === food.x && head.y === food.y) { snScore++; document.getElementById('snScore').innerText = snScore; snd(800, 0.1, 0.2); spawnFood(); } 
+            else { snake.pop(); }
+            drawSnake();
+        }
+        function drawSnake() {
+            snCtx.clearRect(0, 0, 300, 300); snCtx.fillStyle = '#151515'; snCtx.fillRect(0, 0, 300, 300);
+            snCtx.fillStyle = '#ff3366'; snCtx.fillRect(food.x * 20 + 2, food.y * 20 + 2, 16, 16);
+            snake.forEach((s, i) => { snCtx.fillStyle = i === 0 ? '#33ff33' : '#00ffcc'; snCtx.fillRect(s.x * 20 + 1, s.y * 20 + 1, 18, 18); });
         }
 
-        function checkSkillCheck() {
-            if (isGameOver) return;
-            initAudio();
-            let checkAngle = pointerAngle % (Math.PI * 2);
-            if (checkAngle < 0) checkAngle += Math.PI * 2;
-
-            const isHard = currentDiff === "hard";
-
-            if (!isHard && checkAngle >= greatStart && checkAngle <= greatEnd) {
-                combo++;
-                const pts = 300 * combo;
-                score += pts;
-                if (combo > currentSessionMaxCombo) currentSessionMaxCombo = combo;
-                playSound(880, 0.1, 0.2);
-                generateNewZone();
-            } else if (checkAngle >= targetStart && checkAngle <= targetEnd) {
-                combo += isHard ? 0.5 : 1;
-                const pts = Math.floor(100 * combo);
-                score += pts;
-                if (combo > currentSessionMaxCombo) currentSessionMaxCombo = combo;
-                playSound(600, 0.15, 0.2);
-                generateNewZone();
-            } else {
-                lives--;
-                playSound(120, 0.4, 0.4, "triangle");
-                combo = 0;
-                if (lives <= 0) {
-                    isGameOver = true;
-                    finalScore.innerText = score;
-                    finalCombo.innerText = currentSessionMaxCombo + "x";
-                    phraseEl.innerText = getComment(score);
-                    if (currentDiff === "normal") {
-                        if (score > normalHighScore) { normalHighScore = score; localStorage.setItem('highscore_normal', normalHighScore); }
-                        if (currentSessionMaxCombo > normalMaxCombo) { normalMaxCombo = currentSessionMaxCombo; localStorage.setItem('maxcombo_normal', normalMaxCombo); }
-                    } else {
-                        if (score > hardHighScore) { hardHighScore = score; localStorage.setItem('highscore_hard', hardHighScore); }
-                        if (currentSessionMaxCombo > hardMaxCombo) { hardMaxCombo = currentSessionMaxCombo; localStorage.setItem('maxcombo_hard', hardMaxCombo); }
-                    }
-                    gameOverModal.style.display = "flex";
-                } else {
-                    generateNewZone();
-                }
+        function globalLoop() {
+            if (!isOver && activeGame === 'skill') {
+                skAngle += skSpeed * skDir;
+                if (skDiff === "hard" && Date.now() - skLastSwitch > 1500 && Math.random() < 0.005) { skDir *= -1; skLastSwitch = Date.now(); }
+                skCtx.clearRect(0, 0, 300, 300); skCtx.lineWidth = 12;
+                skCtx.beginPath(); skCtx.arc(150, 150, 100, 0, Math.PI * 2); skCtx.strokeStyle = '#333'; skCtx.stroke();
+                skCtx.beginPath(); skCtx.arc(150, 150, 100, skTS, skTE); skCtx.strokeStyle = '#fff'; skCtx.stroke();
+                if (skGS !== -1) { skCtx.beginPath(); skCtx.arc(150, 150, 100, skGS, skGE); skCtx.strokeStyle = '#fc0'; skCtx.stroke(); }
+                skCtx.save(); skCtx.translate(150, 150); skCtx.rotate(skAngle); skCtx.lineWidth = 4; skCtx.strokeStyle = '#f33';
+                skCtx.beginPath(); skCtx.moveTo(80, 0); skCtx.lineTo(120, 0); skCtx.stroke(); skCtx.restore();
             }
-            updateUI();
+            requestAnimationFrame(globalLoop);
         }
 
-        function updateUI() {
-            scoreEl.innerText = score;
-            comboEl.innerText = `${combo}x`;
-            livesEl.innerText = "❤️".repeat(lives);
-            if (currentDiff === "normal") {
-                bestScoreEl.innerText = normalHighScore;
-                maxComboEl.innerText = `${normalMaxCombo}x`;
-            } else {
-                bestScoreEl.innerText = hardHighScore;
-                maxComboEl.innerText = `${hardMaxCombo}x`;
+        window.addEventListener('keydown', e => {
+            if (e.code === "Space") { e.preventDefault(); if (isOver) restartCurrentGame(); else if (activeGame === 'skill') checkSkill(); }
+            if (activeGame === 'snake') {
+                if (e.code === "ArrowUp" && snDir.y !== 1) { e.preventDefault(); changeSnDir(0, -1); }
+                if (e.code === "ArrowDown" && snDir.y !== -1) { e.preventDefault(); changeSnDir(0, 1); }
+                if (e.code === "ArrowLeft" && snDir.x !== 1) { e.preventDefault(); changeSnDir(-1, 0); }
+                if (e.code === "ArrowRight" && snDir.x !== -1) { e.preventDefault(); changeSnDir(1, 0); }
             }
-        }
-
-        function update() {
-            if (!isGameOver) {
-                pointerAngle += currentSpeed * currentDir;
-                if (currentDiff === "hard" && Date.now() - lastDirectionSwitch > 1500 && Math.random() < 0.005) {
-                    currentDir *= -1;
-                    lastDirectionSwitch = Date.now();
-                }
-                draw();
-            }
-            requestAnimationFrame(update);
-        }
-
-        function triggerRestart() {
-            isGameOver = false; score = 0; combo = 0; currentSessionMaxCombo = 0; lives = 3; pointerAngle = -0.2;
-            gameOverModal.style.display = "none";
-            generateNewZone();
-            updateUI();
-        }
+        });
+        skCvs.addEventListener('click', () => { if (isOver) restartCurrentGame(); else checkSkill(); });
 
         volumeSlider.oninput = e => { globalVolume = parseFloat(e.target.value); };
-        btnNormal.onclick = () => { if (isGameOver) return; currentDiff = "normal"; btnNormal.classList.add("active"); btnHard.classList.remove("active"); generateNewZone(); updateUI(); };
-        btnHard.onclick = () => { if (isGameOver) return; currentDiff = "hard"; btnHard.classList.add("active"); btnNormal.classList.remove("active"); generateNewZone(); updateUI(); };
-        restartBtn.onclick = triggerRestart;
-
-        window.addEventListener('keydown', e => { if (e.code === "Space") { e.preventDefault(); if (isGameOver) triggerRestart(); else checkSkillCheck(); } });
-        canvas.addEventListener('click', () => { if (isGameOver) triggerRestart(); else checkSkillCheck(); });
-
-        generateNewZone();
-        updateUI();
-        update();
+        globalLoop();
     </script>
 </body>
 </html>
