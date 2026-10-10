@@ -2,171 +2,283 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>DBD Skill Check</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мини-Игры: Проверка Реакции</title>
     <style>
-        body { background: #111; color: #fff; font-family: sans-serif; text-align: center; padding-top: 30px; user-select: none; }
-        .stats { font-size: 1.2rem; margin-bottom: 20px; }
-        .skill-box { position: relative; width: 300px; height: 300px; margin: 0 auto 20px; }
-        canvas { position: absolute; top: 0; left: 0; }
-        .controls { background: #222; padding: 15px; border-radius: 10px; display: inline-block; margin-top: 20px; }
-        .btn { background: #333; color: #fff; border: 1px solid #555; padding: 6px 12px; margin: 5px; cursor: pointer; font-weight: bold; }
-        .btn.active { background: #fc0; color: #111; }
-        #menu { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; flex-direction: column; align-items: center; justify-content: center; }
-        #phrase { font-style: italic; color: #aaa; margin-top: 15px; font-size: 1.1rem; max-width: 400px; }
+        * { box-sizing: border-box; user-select: none; }
+        body { margin: 0; padding: 0; background: #111; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; }
+        .game-box { display: flex; flex-direction: column; align-items: center; position: relative; margin-bottom: 10px; }
+        .skill-check-container { position: relative; width: 300px; height: 300px; margin-bottom: 10px; }
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; }
+        .stats { text-align: center; font-size: 1.4rem; margin-bottom: 15px; display: flex; gap: 25px; justify-content: center; align-items: center; flex-wrap: wrap; }
+        .score-val, .combo-val, .best-val, .max-val { font-weight: bold; color: #f33; }
+        .combo-val { color: #fc0; }
+        .best-val { color: #0fc; }
+        .max-val { color: #9bf; }
+        .lives-val { color: #ff3366; font-size: 1.5rem; letter-spacing: 2px; }
+        .controls { display: flex; flex-direction: column; gap: 10px; align-items: center; background: #222; padding: 15px 25px; border-radius: 15px; border: 1px solid #333; margin-top: 15px; min-width: 320px; }
+        .controls-row { display: flex; gap: 15px; align-items: center; font-size: .9rem; color: #ccc; justify-content: center; width: 100%; }
+        .records-row { border-top: 1px solid #444; padding-top: 8px; margin-top: 5px; flex-direction: column; gap: 5px; }
+        .diff-btn { background: #333; color: #aaa; border: 1px solid #555; padding: 6px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: all .2s; }
+        .diff-btn.active { background: #ffcc00; color: #111; border-color: #ffcc00; box-shadow: 0 0 10px #ffcc00; }
+        input[type=range] { background: #333; color: #fff; border: 1px solid #555; border-radius: 5px; cursor: pointer; }
+        .instructions { color: #888; font-size: .9rem; margin-top: 5px; text-align: center; }
+        #gameOverModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; align-items: center; justify-content: center; z-index: 100; }
+        #gameOverBox { background: #222; padding: 40px; border-radius: 15px; border: 1px solid #444; text-align: center; box-shadow: 0 0 20px rgba(255,0,0,0.2); }
+        #gameOverBox h2 { color: #f33; margin-top: 0; font-size: 2rem; text-transform: uppercase; }
+        #gameOverBox p { font-size: 1.2rem; margin: 10px 0; }
+        #restartBtn { padding: 12px 30px; font-size: 1.1rem; background: #ffcc00; color: #111; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 20px; }
     </style>
 </head>
 <body>
 
-    <div id="menu">
-        <h2>Игра Окончена</h2>
-        <p>Очки: <span id="fScore" style="color:#fc0">0</span> | Комбо: <span id="fCombo" style="color:#fc0">0x</span></p>
-        <div id="phrase">Фраза загружается...</div>
-        <button class="btn" id="restBtn" style="margin-top: 25px;">Играть заново (ПРОБЕЛ)</button>
-    </div>
-
-    <div class="stats">
-        Очки: <span id="score" style="color:#f33; font-weight:bold;">0</span> | 
-        Комбо: <span id="combo" style="color:#fc0; font-weight:bold;">0x</span> | 
-        Жизни: <span id="lives" style="color:#f33;">❤️❤️❤️</span>
-    </div>
-
-    <div class="skill-box">
-        <canvas id="cvs" width="300" height="300"></canvas>
-    </div>
-    <div>Нажми <b>ПРОБЕЛ</b> для попадания!</div>
-
-    <div class="controls">
-        🔊 Громкость: <input type="range" id="vol" min="0" max="1" step="0.1" value="0.5"><br><br>
-        💀 Сложность: 
-        <button class="btn active" id="bNorm">Обычная</button>
-        <button class="btn" id="bHard">Тяжелая</button>
-        <div style="margin-top: 10px; font-size: 0.9rem; color: #aaa;">
-            Рекорд режима: <span id="best" style="color:#0fc">0</span> | 
-            Макс комбо: <span id="maxC" style="color:#9bf">0x</span>
+    <div id="gameOverModal">
+        <div id="gameOverBox">
+            <h2>Игра Окончена</h2>
+            <p>Ваш результат: <span id="finalScore" style="font-weight:bold;color:#ffcc00">0</span> очков</p>
+            <p>Макс. комбо: <span id="finalCombo" style="font-weight:bold;color:#ffcc00">0x</span></p>
+            <p id="phrase" style="font-style: italic; color: #aaa; margin-top: 15px; font-size: 1rem; max-width: 350px;"></p>
+            <button id="restartBtn">Играть заново (ПРОБЕЛ)</button>
         </div>
     </div>
 
+    <div class="stats">
+        <div>Очки: <span class="score-val" id="score">0</span></div>
+        <div>Комбо: <span class="combo-val" id="combo">0x</span></div>
+        <div>Жизни: <span class="lives-val" id="lives">❤️❤️❤️</span></div>
+    </div>
+
+    <div class="game-box" id="gameBox">
+        <div class="skill-check-container">
+            <canvas id="gameCanvas" width="300" height="300"></canvas>
+        </div>
+        <div class="instructions">Нажми <b>ПРОБЕЛ</b> для попадания!</div>
+        
+        <div class="controls">
+            <div class="controls-row">🔊 Громкость: <input type="range" id="volumeSlider" min="0" max="1" step="0.1" value="0.5"></div>
+            <div class="controls-row">💀 Сложность: <button class="diff-btn active" id="btnNormal">Обычная</button> <button class="diff-btn" id="btnHard">Тяжелая</button></div>
+            <div class="controls-row records-row">
+                <div>Рекорд режима: <span class="best-val" id="bestScore">0</span></div>
+                <div>Макс. комбо режима: <span class="max-val" id="maxCombo">0x</span></div>
+            </div>
+        </div>
+    </div>
     <script>
-        const cvs = document.getElementById('cvs'), ctx = cvs.getContext('2d');
-        const scoreEl = document.getElementById('score'), comboEl = document.getElementById('combo'), livesEl = document.getElementById('lives');
-        const menu = document.getElementById('menu'), fScore = document.getElementById('fScore'), fCombo = document.getElementById('fCombo'), restBtn = document.getElementById('restBtn'), phraseEl = document.getElementById('phrase');
-        const vol = document.getElementById('vol'), bNorm = document.getElementById('bNorm'), bHard = document.getElementById('bHard'), bestEl = document.getElementById('best'), maxCEl = document.getElementById('maxC');
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const bestScoreEl = document.getElementById('bestScore');
+        const comboEl = document.getElementById('combo');
+        const maxComboEl = document.getElementById('maxCombo');
+        const livesEl = document.getElementById('lives');
+        const gameBox = document.getElementById('gameBox');
+        const gameOverModal = document.getElementById('gameOverModal');
+        const finalScore = document.getElementById('finalScore');
+        const finalCombo = document.getElementById('finalCombo');
+        const phraseEl = document.getElementById('phrase');
+        const restartBtn = document.getElementById('restartBtn');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const btnNormal = document.getElementById('btnNormal');
+        const btnHard = document.getElementById('btnHard');
 
-        let score = 0, combo = 0, lives = 3, isOver = false, diff = "normal", dir = 1, lastSwitch = 0, aCtx = null;
-        let hNormal = parseInt(localStorage.getItem('hN')) || 0, cNormal = parseInt(localStorage.getItem('cN')) || 0;
-        let hHard = parseInt(localStorage.getItem('hH')) || 0, cHard = parseInt(localStorage.getItem('cH')) || 0;
-        let maxSessionCombo = 0;
+        let score = 0, combo = 0, lives = 3, audioCtx = null, isGameOver = false, globalVolume = 0.5, currentDir = 1, lastDirectionSwitch = 0, currentDiff = "normal";
+        let normalHighScore = parseInt(localStorage.getItem('highscore_normal')) || 0;
+        let normalMaxCombo = parseInt(localStorage.getItem('maxcombo_normal')) || 0;
+        let hardHighScore = parseInt(localStorage.getItem('highscore_hard')) || 0;
+        let hardMaxCombo = parseInt(localStorage.getItem('maxcombo_hard')) || 0;
+        let currentSessionMaxCombo = 0;
 
-        let angle = -0.2, speed = 0.04, tStart = 0, tEnd = 0, gStart = 0, gEnd = 0;
+        const center = 150, radius = 100;
+        let pointerAngle = -0.2, baseSpeed = 0.04, currentSpeed = baseSpeed, targetStart = 0, targetEnd = 0, greatStart = 0, greatEnd = 0;
 
-        // База случайных фраз под разное количество очков
         const phrases = {
             zero: [
-                "Ты вообще на пробел нажимал? 🗿",
-                "Генератор взорвался до того, как ты к нему подошел.",
-                "Маньяк плачет от смеха в кустах. Попробуй еще раз!"
+                "Вы вообще нажимали на кнопки? 🗿",
+                "Промах сразу на старте. Попробуйте еще раз!",
+                "Нужно немного потренироваться. Соберитесь!"
             ],
             low: [
-                "Ну, по крайней мере ты старался... Наверное. 🫡",
-                "Не густо, но маньяк тебя пока не заметил.",
-                "Руки немного трясутся? Бывает, соберись!"
+                "Хорошая попытка, но рекорд пока далеко! 🫡",
+                "Неплохо для разминки, продолжайте в том же духе.",
+                "Руки немного трясутся? Бывает, попробуйте еще раз!"
             ],
             high: [
-                "Хорош! Сущность довольна твоей реакцией. 🔥",
-                "Чинишь как боженька, тиммейты гордятся тобой!",
-                "Почти идеальный ран! Маньяк нервно курит на другой стороне карты."
+                "Отлично! Великолепная скорость реакции! 🔥",
+                "Вы играете как профессионал, отличный счет!",
+                "Потрясающий результат! Практически идеальный ран."
             ]
         };
 
-        function getComment(s) {
+        function getComment(currentScore) {
             let list = phrases.low;
-            if (s === 0) list = phrases.zero;
-            else if (s >= 1000) list = phrases.high;
+            if (currentScore === 0) list = phrases.zero;
+            else if (currentScore >= 1000) list = phrases.high;
             return list[Math.floor(Math.random() * list.length)];
         }
 
-        function snd(f, d, v, t = "sine") {
-            if (!aCtx) aCtx = new (window.AudioContext || window.webkitAudioContext)();
-            if (vol.value <= 0) return;
-            let o = aCtx.createOscillator(), g = aCtx.createGain();
-            o.type = t; o.frequency.setValueAtTime(f, aCtx.currentTime);
-            g.gain.setValueAtTime(f === 120 ? v * vol.value : v * vol.value * 0.3, aCtx.currentTime);
-            g.gain.exponentialRampToValueAtTime(0.01, aCtx.currentTime + d);
-            o.connect(g); g.connect(aCtx.destination);
-            o.start(); o.stop(aCtx.currentTime + d);
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         }
 
-        function newZone() {
-            let scale = Math.max(0.4, 1 - 0.05 * combo);
-            tStart = Math.random() * Math.PI * 1.2 + 1.0;
-            tEnd = tStart + (Math.random() * 0.3 + 0.4) * scale;
-            if (diff === "hard") { gStart = -1; gEnd = -1; dir = Math.random() > 0.5 ? 1 : -1; } 
-            else { gStart = tStart; gEnd = tStart + 0.08 * scale; dir = 1; }
-            speed = 0.04 * Math.min(2.5, 1 + 0.08 * combo);
-            lastSwitch = Date.now();
+        function playSound(freq, duration, vol, type = "sine") {
+            if (!audioCtx || globalVolume <= 0) return;
+            let osc = audioCtx.createOscillator();
+            let gainNode = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gainNode.gain.setValueAtTime(freq === 120 ? vol * globalVolume : vol * globalVolume * 0.1, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        function generateNewZone() {
+            const isHard = currentDiff === "hard";
+            const zoneScale = Math.max(.4, 1 - .05 * combo);
+            const sizeGood = (Math.random() * 0.3 + 0.4) * zoneScale;
+            const sizeGreat = 0.08 * zoneScale;
+
+            targetStart = Math.random() * Math.PI * 1.2 + 1.0;
+            targetEnd = targetStart + sizeGood;
+
+            if (isHard) {
+                greatStart = -1; greatEnd = -1;
+                currentDir = Math.random() > 0.5 ? 1 : -1;
+            } else {
+                greatStart = targetStart;
+                greatEnd = targetStart + sizeGreat;
+                currentDir = 1;
+            }
+            currentSpeed = baseSpeed * Math.min(2.5, 1 + .08 * combo);
+            lastDirectionSwitch = Date.now();
         }
 
         function draw() {
-            ctx.clearRect(0, 0, 300, 300);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.beginPath();
+            ctx.arc(center, center, radius, 0, Math.PI * 2);
+            ctx.strokeStyle = '#333';
             ctx.lineWidth = 12;
-            ctx.beginPath(); ctx.arc(150, 150, 100, 0, Math.PI * 2); ctx.strokeStyle = '#333'; ctx.stroke();
-            ctx.beginPath(); ctx.arc(150, 150, 100, tStart, tEnd); ctx.strokeStyle = '#fff'; ctx.stroke();
-            if (gStart !== -1) { ctx.beginPath(); ctx.arc(150, 150, 100, gStart, gEnd); ctx.strokeStyle = '#fc0'; ctx.stroke(); }
-            ctx.save(); ctx.translate(150, 150); ctx.rotate(angle); ctx.lineWidth = 4; ctx.strokeStyle = '#f33';
-            ctx.beginPath(); ctx.moveTo(80, 0); ctx.lineTo(120, 0); ctx.stroke(); ctx.restore();
-        }
+            ctx.stroke();
 
-        function check() {
-            if (isOver) return;
-            let a = angle % (Math.PI * 2); if (a < 0) a += Math.PI * 2;
-            if (diff !== "hard" && a >= gStart && a <= gEnd) {
-                combo++; score += 300 * combo; if (combo > maxSessionCombo) maxSessionCombo = combo;
-                snd(880, 0.1, 0.2); newZone();
-            } else if (a >= tStart && a <= tEnd) {
-                combo += diff === "hard" ? 0.5 : 1; score += Math.floor(100 * combo); if (combo > maxSessionCombo) maxSessionCombo = combo;
-                snd(600, 0.15, 0.2); newZone();
-            } else {
-                lives--; snd(120, 0.4, 0.4, "triangle"); combo = 0;
-                if (lives <= 0) {
-                    isOver = true; fScore.innerText = score; fCombo.innerText = maxSessionCombo + "x";
-                    phraseEl.innerText = getComment(score);
-                    if (diff === "normal") {
-                        if (score > hNormal) { hNormal = score; localStorage.setItem('hN', hNormal); }
-                        if (maxSessionCombo > cNormal) { cNormal = maxSessionCombo; localStorage.setItem('cN', cNormal); }
-                    } else {
-                        if (score > hHard) { hHard = score; localStorage.setItem('hH', hHard); }
-                        if (maxSessionCombo > cHard) { cHard = maxSessionCombo; localStorage.setItem('cH', cHard); }
-                    }
-                    menu.style.display = "flex";
-                } else { newZone(); }
+            ctx.beginPath();
+            ctx.arc(center, center, radius, targetStart, targetEnd);
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 12;
+            ctx.stroke();
+
+            if (greatStart !== -1) {
+                ctx.beginPath();
+                ctx.arc(center, center, radius, greatStart, greatEnd);
+                ctx.strokeStyle = '#ffcc00';
+                ctx.lineWidth = 14;
+                ctx.stroke();
             }
-            ui();
+
+            ctx.save();
+            ctx.translate(center, center);
+            ctx.rotate(pointerAngle);
+            ctx.beginPath();
+            ctx.moveTo(radius - 20, 0);
+            ctx.lineTo(radius + 20, 0);
+            ctx.strokeStyle = '#ff3333';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+            ctx.restore();
         }
 
-        function ui() {
-            scoreEl.innerText = score; comboEl.innerText = combo + "x"; livesEl.innerText = "❤️".repeat(lives);
-            if (diff === "normal") { bestEl.innerText = hNormal; maxCEl.innerText = cNormal + "x"; } 
-            else { bestEl.innerText = hHard; maxCEl.innerText = cHard + "x"; }
+        function checkSkillCheck() {
+            if (isGameOver) return;
+            initAudio();
+            let checkAngle = pointerAngle % (Math.PI * 2);
+            if (checkAngle < 0) checkAngle += Math.PI * 2;
+
+            const isHard = currentDiff === "hard";
+
+            if (!isHard && checkAngle >= greatStart && checkAngle <= greatEnd) {
+                combo++;
+                const pts = 300 * combo;
+                score += pts;
+                if (combo > currentSessionMaxCombo) currentSessionMaxCombo = combo;
+                playSound(880, 0.1, 0.2);
+                generateNewZone();
+            } else if (checkAngle >= targetStart && checkAngle <= targetEnd) {
+                combo += isHard ? 0.5 : 1;
+                const pts = Math.floor(100 * combo);
+                score += pts;
+                if (combo > currentSessionMaxCombo) currentSessionMaxCombo = combo;
+                playSound(600, 0.15, 0.2);
+                generateNewZone();
+            } else {
+                lives--;
+                playSound(120, 0.4, 0.4, "triangle");
+                combo = 0;
+                if (lives <= 0) {
+                    isGameOver = true;
+                    finalScore.innerText = score;
+                    finalCombo.innerText = currentSessionMaxCombo + "x";
+                    phraseEl.innerText = getComment(score);
+                    if (currentDiff === "normal") {
+                        if (score > normalHighScore) { normalHighScore = score; localStorage.setItem('highscore_normal', normalHighScore); }
+                        if (currentSessionMaxCombo > normalMaxCombo) { normalMaxCombo = currentSessionMaxCombo; localStorage.setItem('maxcombo_normal', normalMaxCombo); }
+                    } else {
+                        if (score > hardHighScore) { hardHighScore = score; localStorage.setItem('highscore_hard', hardHighScore); }
+                        if (currentSessionMaxCombo > hardMaxCombo) { hardMaxCombo = currentSessionMaxCombo; localStorage.setItem('maxcombo_hard', hardMaxCombo); }
+                    }
+                    gameOverModal.style.display = "flex";
+                } else {
+                    generateNewZone();
+                }
+            }
+            updateUI();
         }
 
-        function loop() {
-            if (!isOver) {
-                angle += speed * dir;
-                if (diff === "hard" && Date.now() - lastSwitch > 1500 && Math.random() < 0.005) { dir *= -1; lastSwitch = Date.now(); }
+        function updateUI() {
+            scoreEl.innerText = score;
+            comboEl.innerText = `${combo}x`;
+            livesEl.innerText = "❤️".repeat(lives);
+            if (currentDiff === "normal") {
+                bestScoreEl.innerText = normalHighScore;
+                maxComboEl.innerText = `${normalMaxCombo}x`;
+            } else {
+                bestScoreEl.innerText = hardHighScore;
+                maxComboEl.innerText = `${hardMaxCombo}x`;
+            }
+        }
+
+        function update() {
+            if (!isGameOver) {
+                pointerAngle += currentSpeed * currentDir;
+                if (currentDiff === "hard" && Date.now() - lastDirectionSwitch > 1500 && Math.random() < 0.005) {
+                    currentDir *= -1;
+                    lastDirectionSwitch = Date.now();
+                }
                 draw();
             }
-            requestAnimationFrame(loop);
+            requestAnimationFrame(update);
         }
 
-        function restart() { isOver = false; score = 0; combo = 0; maxSessionCombo = 0; lives = 3; angle = -0.2; menu.style.display = "none"; newZone(); ui(); }
+        function triggerRestart() {
+            isGameOver = false; score = 0; combo = 0; currentSessionMaxCombo = 0; lives = 3; pointerAngle = -0.2;
+            gameOverModal.style.display = "none";
+            generateNewZone();
+            updateUI();
+        }
 
-        bNorm.onclick = () => { if (isOver) return; diff = "normal"; bNorm.classList.add("active"); bHard.classList.remove("active"); newZone(); ui(); };
-        bHard.onclick = () => { if (isOver) return; diff = "hard"; bHard.classList.add("active"); bNorm.classList.remove("active"); newZone(); ui(); };
-        restBtn.onclick = restart;
-        window.addEventListener('keydown', e => { if (e.code === "Space") { e.preventDefault(); if (isOver) restart(); else check(); } });
-        cvs.addEventListener('click', () => { if (isOver) restart(); else check(); });
+        volumeSlider.oninput = e => { globalVolume = parseFloat(e.target.value); };
+        btnNormal.onclick = () => { if (isGameOver) return; currentDiff = "normal"; btnNormal.classList.add("active"); btnHard.classList.remove("active"); generateNewZone(); updateUI(); };
+        btnHard.onclick = () => { if (isGameOver) return; currentDiff = "hard"; btnHard.classList.add("active"); btnNormal.classList.remove("active"); generateNewZone(); updateUI(); };
+        restartBtn.onclick = triggerRestart;
 
-        newZone(); ui(); loop();
+        window.addEventListener('keydown', e => { if (e.code === "Space") { e.preventDefault(); if (isGameOver) triggerRestart(); else checkSkillCheck(); } });
+        canvas.addEventListener('click', () => { if (isGameOver) triggerRestart(); else checkSkillCheck(); });
+
+        generateNewZone();
+        updateUI();
+        update();
     </script>
 </body>
 </html>
